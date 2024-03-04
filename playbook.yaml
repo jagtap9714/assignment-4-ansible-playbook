@@ -1,4 +1,4 @@
----
+
 - name: Restart Tomcat if new WAR file is present
   hosts: tomcat_server
   become: yes
