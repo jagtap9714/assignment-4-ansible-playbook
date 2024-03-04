@@ -1,0 +1,38 @@
+---
+- name: Restart Tomcat if new WAR file is present
+  hosts: tomcat_server
+  become: yes
+
+  tasks:
+    - name: Check if new WAR file is present
+      stat:
+        path: tomcat/bin/tomcat-juli.jar
+      register: war_file
+
+    - name: Copy new WAR file if changed
+      copy:
+        src: /local/tomcat/bin/tomcat-juli.jar
+        dest: /path/to/your/application.war
+      when: war_file.stat.changed
+
+    - name: Ensure Tomcat is running
+      systemd:
+        name: tomcat
+        state: started
+
+    - name: Restart Tomcat if the WAR file changed
+      command: "{{ tomcat_home }}/bin/shutdown.sh && sleep 5 && {{ tomcat_home }}/bin/startup.sh"
+      when: war_file.stat.changed
+
+- name: Check if Tomcat process is up and running
+  hosts: tomcat_server
+  become: yes
+
+  tasks:
+    - name: Check if Tomcat process is running
+      shell: ps aux | grep -v grep | grep -c catalina
+      register: tomcat_process_count
+
+    - name: Print top 10 running processes
+      command: ps aux --sort=-%cpu | head -n 11
+      when: tomcat_process_count.stdout | int > 0
